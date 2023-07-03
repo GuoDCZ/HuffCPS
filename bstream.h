@@ -4,56 +4,59 @@
 #include <cstring>
 #include <string>
 
-typedef std::string::iterator str_it;
-typedef std::string::const_iterator const_str_it;
-
-class bptr {
- public:
-    str_it it;
-    int o;
- public:
-    bptr(str_it it, int o = 0);
-    bool operator==(const_str_it it_) const;
-    bool operator!=(const_str_it it_) const;
-    bool get() const;
-    void set(bool bit) const;
-    bptr operator+(int i) const;
-    bptr operator-(int i) const;
-    bptr &operator++();
-    bptr &operator--();
-    bptr operator++(int);
-    bptr operator--(int);
-};
-
 class bstream {
- protected:
+    std::string bitstr;
+    std::size_t index = 0;
+
  public:
-    std::string str;
-    bptr bp;
-    bstream(std::string str);
-    bstream();
-    bool good() const;
+    inline void get(bool &bit);
+    inline void get(char &ch);
+    inline void get(char str[]);
+    inline void get(std::string &str);
+
+    inline bool good();
+
+    inline void set(bool bit);
+    inline void set(char ch);
+    inline void set(const char str[]);
+    inline void set(const std::string &str);
 };
 
-class ibstream : public bstream {
+class ibstream : protected bstream {
+
  public:
+    ibstream();
+    ibstream(bool bit);
+    ibstream(char ch);
     ibstream(const std::string &str);
     ibstream(const char str[]);
-    ibstream(const char &ch);
-    void write(bool *p, int size = 1);
-    void write(char *p, int size = 1);
-    bool getbit();
-    char getchar();
+
+    bool good();
+
+    void read(bool *p, std::size_t s = 1);
+    void read(char *p, std::size_t s = 1);
+    void read(std::string &str);
+
+    ibstream &operator>>(bool &bit);
+    ibstream &operator>>(char &ch);
+    ibstream &operator>>(char str[]);
+    ibstream &operator>>(std::string &str);
 };
 
-class obstream : public bstream {
+class obstream : protected bstream {
+
  public:
-    obstream();
-    const std::string &getstr() const;
-    void read(const bool *p, int size = 1);
-    void read(const char *p, int size = 1);
-    void setbit(bool bit);
-    void setchar(char ch);
+    std::string str();
+
+    void write(const bool *p, std::size_t s = 1);
+    void write(const char *p, std::size_t s = 1);
+    void write(const std::string &str);
+
+    obstream &operator<<(bool bit);
+    obstream &operator<<(char ch);
+    obstream &operator<<(const std::string &str);
+    obstream &operator<<(const char str[]);
+
 };
 
 #endif

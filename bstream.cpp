@@ -1,121 +1,161 @@
 #include "bstream.h"
 
-// ------- bptr: Bit Pointer ------- // 
+#include <iostream>
 
-bptr::bptr(str_it it, int o) : 
-    it(it), o(o) { }
+// ------- bstream: Basic Bit Stream ------- //
 
-bool bptr::operator==(const_str_it it_) const {
-    return it == it_;
+void bstream::get(bool &bit) {
+    if (good()) bit = bitstr[index++];
+    else bit = 0;
 }
 
-bool bptr::operator!=(const_str_it it_) const {
-    return it != it_;
+void bstream::get(char &ch) {
+    ch = 0;
+    bool bit;
+    for (int i = 7; i >= 0; --i) {
+        get(bit);
+        ch |= bit << i;
+    }
 }
 
-bool bptr::get() const {
-    return *it & 0x80 >> o;
+void bstream::get(char str[]) {
+    while (good()) get(*(str++));
+    *str = 0;
 }
 
-void bptr::set(bool bit) const {
-    if (bit) *it |= 0x80 >> o;
-    else     *it &= (0x80 >> o) ^ 0xff;
+void bstream::get(std::string &str) {
+    str.clear();
+    char ch;
+    while (good()) {
+        get(ch);
+        str += ch;
+    }
 }
 
-bptr bptr::operator+(int i) const {
-    if (i < 0) return operator-(-i);
-    return {it + (o + i) / 8, (o + i) % 8};
+bool bstream::good() {
+    // std::cout << "IN GOOD: " << bitstr.size() - index << std::endl;
+    return index < bitstr.size();
 }
 
-bptr bptr::operator-(int i) const {
-    if (i < 0) return operator+(-i);
-    return {it + (o - i - 7) / 8, (o - i - 8) % 8 + 8};
+void bstream::set(bool bit) {
+    // std::cout << "IN SET BIT 1: " << bitstr << std::endl;
+    bitstr += bit;
+    // std::cout << "IN SET BIT 2: " << bitstr << std::endl;
 }
 
-bptr &bptr::operator++() {
-    return *this = operator+(1);
+void bstream::set(char ch) {
+    // std::cout << "IN SET CH 1: " << bitstr << std::endl;
+    for (int i = 7; i >= 0; --i) set((bool)(ch & 1 << i));
+    // std::cout << "IN SET CH 2: " << bitstr << std::endl;
 }
 
-bptr &bptr::operator--() {
-    return *this = operator-(1);
+void bstream::set(const char str[]) {
+    // std::cout << "IN SET STR 1: " << bitstr << std::endl;
+    set(std::string(str));
+    // std::cout << "IN SET STR 2: " << bitstr << std::endl;
 }
 
-bptr bptr::operator++(int) {
-    bptr temp = *this;
-    operator++();
-    return temp;
+void bstream::set(const std::string &str) {
+    // std::cout << "IN SET STR 1: " << bitstr << std::endl;
+    for (char ch : str) set(ch);
+    // std::cout << "IN SET STR 2: " << bitstr << std::endl;
 }
 
-bptr bptr::operator--(int) {
-    bptr temp = *this;
-    operator--();
-    return temp;
+// ------- ibstream: IN Bit Stream ------- //
+
+ibstream::ibstream() { };
+
+ibstream::ibstream(bool bit) {
+    set(bit);
 }
 
-// ------- bstream: basic Bit Stream ------- // 
-
-bstream::bstream(std::string str_) :
-    str(str_), bp(str.begin()) { }
-
-bstream::bstream() :
-    bp(str.begin()) { }
-
-bool bstream::good() const {
-    return bp != str.end();
+ibstream::ibstream(char ch) {
+    set(ch);
 }
 
-// ------- ibstream: IN Bit Stream ------- // 
-
-ibstream::ibstream(const std::string &str) :
-    bstream(std::string(str)) { }
+ibstream::ibstream(const std::string &str) {
+    // std::cout << "IN bstream CONS 1: " << bitstr << std::endl;
+    set(str);
+    // std::cout << "IN bstream CONS 2: " << bitstr << std::endl;
+}
 
 ibstream::ibstream(const char str[]) :
-    bstream(std::string(str)) { }
+    ibstream(std::string(str)) { }
 
-ibstream::ibstream(const char &ch) :
-    bstream(std::string(1, ch)) { }
 
-void ibstream::write(bool *p, int size) {
-    while (size-- > 0) *(p++) = getbit();
+bool ibstream::good() {
+    // std::cout << "IN GOOD: " << bitstr.size() - index << std::endl;
+    return bstream::good();
 }
 
-void ibstream::write(char *p, int size) {
-    while (size-- > 0) *(p++) = getchar();
+void ibstream::read(bool *p, std::size_t s) {
+    while (s--) get(*(p++));
 }
 
-bool ibstream::getbit() {
-    if (good()) return (bp++).get();
-    return 0;
+void ibstream::read(char *p, std::size_t s) {
+    while (s--) get(*(p++));
 }
 
-char ibstream::getchar() {
-    obstream obs;
-    for (int i = 0; i < 8; ++i) obs.setbit(getbit());
-    return obs.getstr()[0];
+void ibstream::read(std::string &str) {
+    get(str);
 }
 
-// ------- obstream: OUT Bit Stream ------- // 
-
-obstream::obstream() :
-    bstream() { }
-
-const std::string &obstream::getstr() const {
-    return str;
+ibstream &ibstream::operator>>(bool &bit) {
+    get(bit);
+    return *this;
 }
 
-void obstream::read(const bool *p, int size) {
-    while (size-- > 0) setbit(*(p++));
+ibstream &ibstream::operator>>(char &ch) {
+    get(ch);
+    return *this;
 }
 
-void obstream::read(const char *p, int size) {
-    while (size-- > 0) setchar(*(p++));
+ibstream &ibstream::operator>>(char str[]) {
+    get(str);
+    return *this;
 }
 
-void obstream::setbit(bool bit) {
-    (bp++).set(bit);
+ibstream &ibstream::operator>>(std::string &str) {
+    get(str);
+    return *this;
 }
 
-void obstream::setchar(char ch) {
-    ibstream ibs(ch);
-    for (int i = 0; i < 8; ++i) setbit(ibs.getbit());
+// ------- obstream: OUT Bit Stream ------- //
+
+std::string obstream::str() {
+    std::string s;
+    get(s);
+    return s;
+}
+
+void obstream::write(const bool *p, std::size_t s) {
+    while (s--) set(*(p++));
+}
+
+void obstream::write(const char *p, std::size_t s) {
+    while (s--) set(*(p++));
+}
+
+void obstream::write(const std::string &str) {
+    set(str);
+}
+
+obstream &obstream::operator<<(bool bit) {
+    set(bit);
+    return *this;
+}
+
+obstream &obstream::operator<<(char ch) {
+    set(ch);
+    return *this;
+}
+
+obstream &obstream::operator<<(const std::string &str) {
+    set(str);
+    return *this;
+}
+
+obstream &obstream::operator<<(const char str[]) {
+    set(str);
+    return *this;
 }

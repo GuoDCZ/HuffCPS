@@ -1,21 +1,34 @@
-#ifndef P4_HUFFMANTREE_H
-#define P4_HUFFMANTREE_H
+#ifndef HUFFMANTREE_H
+#define HUFFMANTREE_H
 
 #include "binaryTree.h"
 #include "bstream.h"
+#include <string>
+#include <fstream>
 
-class HuffmanTree : public BinaryTree {
-    // Huffman tree
+class Compress : public BinaryTree {
+    std::ifstream ifs;
+    std::ofstream ofs;
+    obstream obs;
+    Node *root;
+    void buildTree();
+    void encodeTree();
+    void encodeContent();
+    void output();
+ public:
+    Compress(const std::string &infilename, 
+             const std::string &outfilename);
+};
 
-public:
-    HuffmanTree(Node *rootNode = nullptr); 
-
-    HuffmanTree(ibstream &ibs);
-    
-    void decode(ibstream &ibs);
-
-    void encode(obstream &obs);
-    
+class Decompress : public BinaryTree {
+    std::ifstream ifs;
+    std::ofstream ofs;
+    Node *root;
+    void decodeTree(ibstream&);
+    void decodeContent(ibstream&);
+ public:
+    Decompress(const std::string &infilename, 
+               const std::string &outfilename);
 };
 
 #endif

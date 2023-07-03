@@ -2,15 +2,10 @@
 #include <vector>
 #include <iomanip>
 #include <fstream>
-#include "huffmanTree.cpp"
+#include "binaryTree.h"
+#include <string>
 
-struct Pos {int row, col;};
-struct Item {std::string str, leaf;};
-
-class Fig {
-    std::vector<std::vector<Item>> fig;
-    Pos pos;
-    void autoFill() {
+void Fig::autoFill() {
         while (pos.row >= fig.size()) {
             fig.push_back(std::vector<Item>({}));
         }
@@ -21,11 +16,12 @@ class Fig {
             pos.col++;
         }
     }
- public:
-    Fig(): pos({0,0}) {
+
+Fig::Fig(): pos({0,0}) {
         autoFill();
     }
-    void print() {
+
+void Fig::print() {
         int depth = fig.size();
         for (auto row : fig) {
             std::cout << std::setw(2*depth) << "";
@@ -41,42 +37,48 @@ class Fig {
             depth--;
         }
     }
-    void operator<= (Item item) {fig[pos.row].push_back(item); }
-    void downToLeft() {pos.row++; autoFill(); }
-    void downToRight() {pos.row++; pos.col++; autoFill(); }
-    void UpFromLeft() {pos.row--; autoFill(); }
-    void UpFromRight() {pos.row--; pos.col--; autoFill(); }
-};
+void Fig::operator<= (Item item) {fig[pos.row].push_back(item); }
+void Fig::downToLeft() {pos.row++; autoFill(); }
+void Fig::downToRight() {pos.row++; pos.col++; autoFill(); }
+void Fig::UpFromLeft() {pos.row--; autoFill(); }
+void Fig::UpFromRight() {pos.row--; pos.col--; autoFill(); }
+
+bool isPrintableChar(char ch) {
+    return ch > 32;
+}
 
 void printTree_finer_helper(Fig &fig, const Node *n) {
-    bool l = n->leftSubtree(), r = n->rightSubtree();
-    if (l) {
+    if (n->l) {
         fig.downToLeft();
-        printTree_finer_helper(fig, n->leftSubtree()); 
+        printTree_finer_helper(fig, n->l); 
         fig.UpFromLeft();
     }
-    if (r) {
+    if (n->r) {
         fig.downToRight();
-        printTree_finer_helper(fig, n->rightSubtree());
+        printTree_finer_helper(fig, n->r);
         fig.UpFromRight();
     }
     std::string sym;
-    if (l & r) sym = "/ \\";
-    else if (l) sym = "/  ";
-    else if (r) sym = "\\";
-    else sym = "";
-    if (n->getstr().length() != 1) {
-        fig <= Item({std::to_string(n->getnum()), sym});
-    } else if (n->getstr()=="\n") {
-        fig <= Item({"\\n", sym});
+    if (!n->l || !n->r) {
+        sym = "";
+        if (isPrintableChar(n->c)) {
+            char str[] = " ";
+            str[0] = n->c;
+            fig <= Item({std::string(str), sym});
+        }
+        else {
+            fig <= Item({std::to_string(n->c), sym});
+        }
     } else {
-        fig <= Item({n->getstr(), sym});
+        if (n->l) sym = "/  ";
+        if (n->r) sym = "\\";
+        if (n->r && n->l) sym = "/ \\";
+        fig <= Item({std::to_string(n->n), sym});
     }
-    
 }
 
-void printTree_finer(const HuffmanTree &tree) {
+void printTree_finer(const Node *n) {
     Fig fig;
-    printTree_finer_helper(fig, tree.root);
+    printTree_finer_helper(fig, n);
     fig.print();
 }
